@@ -72,6 +72,7 @@ export function animateFeedback(panel,correct){
 }
 export function stopFeedbackMotion(){
   if(allowed())return;
+  stopParallax();
   document.querySelectorAll('.feedback-portal,.motion-morph').forEach(el=>el.remove());
   document.querySelectorAll('#app *').forEach(el=>el.getAnimations().forEach(a=>{if(a.effect?.getTiming().fill==='backwards')a.cancel();}));
 }

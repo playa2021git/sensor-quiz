@@ -12,6 +12,10 @@ process.on('exit',()=>server.kill());
     const page=await browser.newPage({viewport:{width:1366,height:768}}),errors=[];
     page.on('pageerror',e=>errors.push(e.message));
     async function basic(value){await page.goto('http://127.0.0.1:4177');await page.locator('[data-action="basic-start"]').click();await page.locator(`[data-basic-answer="${value}"]`).click();}
+    await page.goto('http://127.0.0.1:4177');
+    await page.locator('[data-action="settings"]').click();await page.locator('#effects').uncheck();
+    assert.equal(await page.evaluate(()=>document.getAnimations().length),0,'turning effects OFF also stops background parallax');
+    await page.locator('#effects').check();await page.locator('#close-modal').click();
     await basic(false);
     assert.equal(await page.locator('.feedback-portal').count(),1,'correct answer opens zoom portal');
     await page.locator('.feedback-portal').waitFor({state:'detached'});
