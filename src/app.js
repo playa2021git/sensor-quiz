@@ -1,7 +1,7 @@
 import { animateFeedback, stopFeedbackMotion, parallax, stopParallax } from './feedback-motion.js';
 import { modeHeading, animateModeHeadings, successBurst, syncMotionPreference } from './motion.js';
 import { metalShine, finaleEffects, advancedFinale } from './celebrations.js';
-import { createBasicMode, basicsUnlocked, basicBest, resetBasicProgress } from './basic-mode.js';
+import { createBasicMode, basicsUnlocked, basicBest, resetBasicProgress } from './basic-mode.js?v=feedback-six-1';
 import { questions } from './questions.js';
 import { evaluate, summarize, shuffle } from './engine.js';
 import { devices } from './encyclopedia.js';
