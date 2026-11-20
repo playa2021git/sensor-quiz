@@ -213,6 +213,39 @@ async function next(page, i) { await page.locator('[data-action="next"]').click(
   await missing.route('**/assets/*.png', route => route.abort()); await missing.goto(base); await missing.locator('[data-action="start"]').click(); await missing.locator('.image-frame.missing').waitFor();
   await missing.locator('[data-choice="best"]').click(); await missing.locator('.selection.optimal').waitFor();
   checks.push('all PNGs missing: caption and mascot fallback, answering still works, subdirectory paths');
+
+  // Secret stage is entirely absent until the advanced course has been completed.
+  const secretContext = await browser.newContext({viewport:{width:1366,height:768},reducedMotion:'reduce'});
+  await secretContext.addInitScript(() => localStorage.setItem('sensor-quest-basics-v1',JSON.stringify({best:7})));
+  const secretPage = await secretContext.newPage();checkPage(secretPage);await secretPage.goto(base);
+  assert.equal(await secretPage.locator('.secret-card,[data-action="secret-start"]').count(),0);
+  await secretPage.locator('[data-action="start"]').click();
+  for(let i=0;i<10;i++){
+    await secretPage.locator('[data-choice="best"]').click();
+    await next(secretPage,i);
+  }
+  assert.equal(await secretPage.locator('[data-action="secret-start"]').count(),1);
+  assert.match(await secretPage.locator('[data-action="secret-start"]').innerText(),/隠しステージ/);
+  await secretPage.locator('[data-action="secret-start"]').click();
+  const {secretQuestions} = await import('../src/secret.js');
+  for(let i=0;i<6;i++){
+    assert.equal(await secretPage.locator('[data-secret-answer]').count(),4);
+    await secretPage.locator('[data-secret-answer="'+secretQuestions[i].answer+'"]').click();
+    assert.equal(await secretPage.locator('.secret-correct-answer').count(),1);
+    await secretPage.locator('[data-secret-next]').click();
+  }
+  assert.match(await secretPage.locator('.secret-final-score').innerText(),/6/);
+  assert.equal(await secretPage.locator('.secret-review details').count(),6);
+  await secretPage.screenshot({path:'work/secret-final.png'});
+  await secretPage.locator('[data-action="home"]').click();
+  assert.equal(await secretPage.locator('.secret-card').count(),1);
+  await secretPage.reload();
+  assert.equal(await secretPage.locator('.secret-card').count(),1);
+  await secretPage.locator('[data-action="reset-progress"]').click();
+  await secretPage.locator('[data-action="confirm-reset-progress"]').click();
+  assert.equal(await secretPage.locator('.secret-card').count(),0);
+  checks.push('secret: initially hidden; unlock after advanced; six 4-choice questions with feedback; perfect score, review, persist and reset');
+  await secretContext.close();
   await browser.close(); server.kill(); fs.writeFileSync('work/browser-results.json', JSON.stringify({ viewport:'1366x768', checks, errors }, null, 2)); console.log(JSON.stringify({ checks, errors }, null, 2));
   if (errors.length) process.exitCode = 1;
 })().catch(async e => { console.error(e); if (browser) await browser.close(); process.exitCode = 1; }).finally(() => server.kill());
