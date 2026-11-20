@@ -228,6 +228,35 @@ async function next(page, i) { await page.locator('[data-action="next"]').click(
   assert.match(await secretPage.locator('[data-action="secret-start"]').innerText(),/隠しステージ/);
   await secretPage.locator('[data-action="secret-start"]').click();
   const {secretQuestions} = await import('../src/secret.js');
+  // Confirm that the text remains readable on a Chromebook browser viewport.
+  await secretPage.setViewportSize({width:1366,height:600});
+  const secretLegibility = await secretPage.evaluate(() => {
+    const button=document.querySelector('[data-secret-answer]');
+    const label=button.querySelector('span');
+    const panel=document.querySelector('.secret-board');
+    const prompt=document.querySelector('.secret-situation>p');
+    const rect=panel.getBoundingClientRect();
+    return {
+      buttonColor:getComputedStyle(button).color,
+      labelColor:getComputedStyle(label).color,
+      buttonBackground:getComputedStyle(button).backgroundColor,
+      labelFont:parseFloat(getComputedStyle(label).fontSize),
+      promptColor:getComputedStyle(prompt).color,
+      promptFont:parseFloat(getComputedStyle(prompt).fontSize),
+      panelBottom:rect.bottom,
+      width:document.documentElement.scrollWidth,
+      height:document.documentElement.scrollHeight
+    };
+  });
+  assert.equal(secretLegibility.labelColor,'rgb(255, 255, 255)');
+  assert.equal(secretLegibility.buttonBackground,'rgb(27, 51, 86)');
+  assert.ok(secretLegibility.labelFont>=20);
+  assert.ok(secretLegibility.promptFont>=21);
+  assert.ok(secretLegibility.panelBottom<=600);
+  assert.ok(secretLegibility.width<=1366);
+  assert.ok(secretLegibility.height<=600);
+  await secretPage.screenshot({path:'work/secret-readable-1366x600.png'});
+  await secretPage.setViewportSize({width:1366,height:768});
   for(let i=0;i<6;i++){
     assert.equal(await secretPage.locator('[data-secret-answer]').count(),4);
     await secretPage.locator('[data-secret-answer="'+secretQuestions[i].answer+'"]').click();
