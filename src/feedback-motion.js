@@ -38,18 +38,6 @@ function morph(host){
   function frame(now){if(!c.isConnected)return;if(!allowed()){c.remove();return;}k.clearRect(0,0,539,208);k.save();drawMorph(k,539,208,(Math.max(0,now-start)/1000)%4.7);k.restore();requestAnimationFrame(frame);}
   requestAnimationFrame(frame);
 }
-// Motion Prompt #020 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#020
-function zoom(panel){
-  const radius=24.5,max=Math.hypot(innerWidth/2,innerHeight/2)/radius*1.08;
-  const portal=document.createElement('div');portal.className='feedback-portal';portal.setAttribute('aria-hidden','true');panel.closest('.game').append(portal);
-  const scale=t=>Math.pow(max,.8*Math.pow(phase(t,.25,1.2),3)+.2*(1-Math.pow(1-phase(t,1.2,1.65),3)));
-  const a=play(portal,1.65,t=>({transform:`scale(${scale(t)})`}));
-  const rect=panel.getBoundingClientRect();
-  panel.style.transformOrigin=`${innerWidth/2-rect.left}px ${innerHeight/2-rect.top}px`;
-  const contentAnimation=play(panel,1.65,t=>({transform:`scale(${scale(t)/max})`}));
-  contentAnimation?.finished.then(()=>panel.style.removeProperty('transform-origin'),()=>panel.style.removeProperty('transform-origin'));
-  if(a)a.finished.then(()=>portal.remove(),()=>portal.remove());else portal.remove();
-}
 // Motion Prompt #005 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#005
 function mask(panel){
   const label=panel.querySelector('.basic-answer-label,.selection');
@@ -65,15 +53,17 @@ function mask(panel){
 }
 export function animateFeedback(panel,correct){
   if(!panel||!allowed())return;
-  if(correct)zoom(panel);else mask(panel);
-  kinetic(panel.querySelector('.basic-answer-label,.selection-label'),correct?1.5:.35);
-  popIn(panel.querySelector('.basic-next')||panel.closest('.game').querySelector('.next'),correct?1.65:1.15);
+  if(!correct){
+    mask(panel);
+    kinetic(panel.querySelector('.basic-answer-label,.selection-label'),.35);
+    popIn(panel.querySelector('.basic-next')||panel.closest('.game').querySelector('.next'),1.15);
+  }
   morph(panel.querySelector('.basic-feedback-cat,.explanation-mascot'));
 }
 export function stopFeedbackMotion(){
   if(allowed())return;
   stopParallax();
-  document.querySelectorAll('.feedback-portal,.motion-morph').forEach(el=>el.remove());
+  document.querySelectorAll('.motion-morph').forEach(el=>el.remove());
   document.querySelectorAll('#app *').forEach(el=>el.getAnimations().forEach(a=>{if(a.effect?.getTiming().fill==='backwards')a.cancel();}));
 }
 // Motion Prompt #016 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#016

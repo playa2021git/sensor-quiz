@@ -226,7 +226,12 @@ async function next(page, i) { await page.locator('[data-action="next"]').click(
   }
   assert.equal(await secretPage.locator('[data-action="secret-start"]').count(),1);
   assert.match(await secretPage.locator('[data-action="secret-start"]').innerText(),/隠しステージ/);
-  await secretPage.locator('[data-action="secret-start"]').click();
+  const unlockButton = secretPage.locator('.secret-portal.secret-new');
+  assert.equal(await unlockButton.evaluate(button => getComputedStyle(button, '::before').animationName), 'none');
+  await secretPage.emulateMedia({reducedMotion:'no-preference'});
+  assert.equal(await unlockButton.evaluate(button => getComputedStyle(button, '::before').animationName), 'secret-sweep');
+  await secretPage.emulateMedia({reducedMotion:'reduce'});
+  await unlockButton.click();
   const {secretQuestions} = await import('../src/secret.js');
   // Confirm that the text remains readable on a Chromebook browser viewport.
   await secretPage.setViewportSize({width:1366,height:600});
@@ -243,6 +248,7 @@ async function next(page, i) { await page.locator('[data-action="next"]').click(
       labelFont:parseFloat(getComputedStyle(label).fontSize),
       promptColor:getComputedStyle(prompt).color,
       promptFont:parseFloat(getComputedStyle(prompt).fontSize),
+      catHeight:document.querySelector('.secret-mascot .cat').getBoundingClientRect().height,
       panelBottom:rect.bottom,
       width:document.documentElement.scrollWidth,
       height:document.documentElement.scrollHeight
@@ -252,28 +258,29 @@ async function next(page, i) { await page.locator('[data-action="next"]').click(
   assert.equal(secretLegibility.buttonBackground,'rgb(27, 51, 86)');
   assert.ok(secretLegibility.labelFont>=20);
   assert.ok(secretLegibility.promptFont>=21);
+  assert.equal(secretLegibility.catHeight,264);
   assert.ok(secretLegibility.panelBottom<=600);
   assert.ok(secretLegibility.width<=1366);
   assert.ok(secretLegibility.height<=600);
   await secretPage.screenshot({path:'work/secret-readable-1366x600.png'});
   await secretPage.setViewportSize({width:1366,height:768});
-  for(let i=0;i<6;i++){
+  for(let i=0;i<secretQuestions.length;i++){
     assert.equal(await secretPage.locator('[data-secret-answer]').count(),4);
     await secretPage.locator('[data-secret-answer="'+secretQuestions[i].answer+'"]').click();
     assert.equal(await secretPage.locator('.secret-correct-answer').count(),1);
     await secretPage.locator('[data-secret-next]').click();
   }
-  assert.match(await secretPage.locator('.secret-final-score').innerText(),/6/);
-  assert.equal(await secretPage.locator('.secret-review details').count(),6);
+  assert.match(await secretPage.locator('.secret-final-score').innerText(),/5\s*\/ 5問正解/);
+  assert.equal(await secretPage.locator('.secret-review details').count(),5);
   await secretPage.screenshot({path:'work/secret-final.png'});
-  await secretPage.locator('[data-action="home"]').click();
+  await secretPage.locator('.secret-final-actions [data-action="home"]').click();
   assert.equal(await secretPage.locator('.secret-card').count(),1);
   await secretPage.reload();
   assert.equal(await secretPage.locator('.secret-card').count(),1);
   await secretPage.locator('[data-action="reset-progress"]').click();
   await secretPage.locator('[data-action="confirm-reset-progress"]').click();
   assert.equal(await secretPage.locator('.secret-card').count(),0);
-  checks.push('secret: initially hidden; unlock after advanced; six 4-choice questions with feedback; perfect score, review, persist and reset');
+  checks.push('secret: initially hidden; unlock after advanced; five 4-choice questions with feedback; perfect score, review, persist and reset');
   await secretContext.close();
   await browser.close(); server.kill(); fs.writeFileSync('work/browser-results.json', JSON.stringify({ viewport:'1366x768', checks, errors }, null, 2)); console.log(JSON.stringify({ checks, errors }, null, 2));
   if (errors.length) process.exitCode = 1;
